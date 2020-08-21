@@ -10,7 +10,7 @@ import (
 func main() {
 	route := gin.Default()
 
-	// Подключение к базе данных
+	// Подключение к базе данных 666
 	models.ConnectDB()
 
 	// Маршруты

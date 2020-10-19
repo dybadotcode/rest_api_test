@@ -11,8 +11,8 @@ import (
 var DB *gorm.DB
 
 //ConnectDB ...
-func ConnectDB() {
-	db, err := gorm.Open("postgres", "host=localhost port=5432 user=postgres dbname=demo password=q sslmode=disable")
+func ConnectDB(dialect string, params string) {
+	db, err := gorm.Open(dialect, params)
 	if err != nil {
 		panic("Не удалось подключиться к базе данных")
 	}

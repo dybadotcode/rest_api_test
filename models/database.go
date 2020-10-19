@@ -18,5 +18,5 @@ func ConnectDB() {
 	}
 	db.AutoMigrate(&Rss{})
 	DB = db
-	DB.LogMode(true)
+	//DB.LogMode(true)
 }

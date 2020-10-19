@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"time"
 
-	"fmt"
 	"restapi/models"
 
 	"github.com/gin-gonic/gin"
@@ -140,7 +139,6 @@ func DeleteRss(context *gin.Context) {
 // addQueryPart ...
 func addQueryPart(db **gorm.DB, queryPart string, data string) {
 	if data != "" {
-		fmt.Println(queryPart + " " + data)
 		*db = (*db).Where(queryPart, data)
 	}
 }

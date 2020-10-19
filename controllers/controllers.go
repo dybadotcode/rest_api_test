@@ -1,93 +1,146 @@
 package controllers
 
 import (
-	"go/dev/golang/src/restapi/models"
 	"net/http"
+	"time"
+
+	"fmt"
+	"restapi/models"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
 )
 
-type CreateArticleInput struct {
-	Writer  string `json:"writer" binding:"required"`
-	Title   string `json:"title" binding:"required"`
-	Content string `json:"content" binding:"required"`
+//RssInput ...
+type RssInput struct {
+	AccessTime   string `json:"accessTime" binding:"required"`
+	ResponseTime string `json:"responseTime" binding:"required"`
+	UserAgent    string `json:"userAgent" binding:"required"`
+	URL          string `json:"url" binding:"required"`
+	Content      string `json:"content" binding:"required"`
 }
 
-type UpdateArticleInput struct {
-	Writer  string `json:"writer"`
-	Title   string `json:"title"`
-	Content string `json:"content"`
+//RssUpdate ...
+type RssUpdate struct {
+	AccessTime   string `json:"accessTime"`
+	ResponseTime string `json:"responseTime"`
+	UserAgent    string `json:"userAgent"`
+	URL          string `json:"url"`
+	Content      string `json:"content"`
 }
 
-// GET /articles
-// Получаем список всех
-func GetAllArticles(context *gin.Context) {
-	var article []models.Article
-	models.DB.Find(&article)
-
-	context.JSON(http.StatusOK, gin.H{"article": article})
+//RssQuery ...
+type RssQuery struct {
+	AccessTimeFrom   string `json:"accessTimeFrom"`
+	AccessTimeTo     string `json:"accessTimeTo"`
+	ResponseTimeFrom string `json:"responseTimeFrom"`
+	ResponseTimeTo   string `json:"responseTimeTo"`
+	UserAgent        string `json:"userAgent"`
+	URL              string `json:"url"`
+	Content          string `json:"content"`
 }
 
-// GET /articles/:id
-// Получение одной новости по ID
-func GetArticle(context *gin.Context) {
+// CreateRss ...
+//POST /rsses
+func CreateRss(context *gin.Context) {
+	var input RssInput
+	if err := context.ShouldBindJSON(&input); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	accessTime, _ := time.Parse(time.RFC3339, input.AccessTime)
+	responseTime, _ := time.Parse(time.RFC3339, input.ResponseTime)
+	rss := models.Rss{AccessTime: accessTime, ResponseTime: responseTime, UserAgent: input.UserAgent, URL: input.URL, Content: input.Content}
+	models.DB.Create(&rss)
+	context.JSON(http.StatusOK, gin.H{"rsses": rss})
+}
+
+// GetAllRsses ...
+// GET /rsses
+func GetAllRsses(context *gin.Context) {
+	var rss []models.Rss
+	models.DB.Find(&rss)
+	context.JSON(http.StatusOK, gin.H{"rsses": rss})
+}
+
+// GetRss ...
+// GET /rsses/:id
+func GetRss(context *gin.Context) {
 	// Проверяем имеется ли запись
-	var article models.Article
-	if err := models.DB.Where("id = ?", context.Param("id")).First(&article).Error; err != nil {
+	var rss models.Rss
+	if err := models.DB.Where("id = ?", context.Param("id")).First(&rss).Error; err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"error": "Запись не существует"})
 		return
 	}
-
-	context.JSON(http.StatusOK, gin.H{"articles": article})
+	context.JSON(http.StatusOK, gin.H{"rsses": rss})
 }
 
-// POST /articles
-// Создание новости
-func CreateArticle(context *gin.Context) {
-	var input CreateArticleInput
-	if err := context.ShouldBindJSON(&input); err != nil {
+// SearchRss ...
+// GET /rsses/search/
+func SearchRss(context *gin.Context) {
+	var rssQuery RssQuery
+	var rsses []models.Rss
+	if err := context.ShouldBindJSON(&rssQuery); err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	// Where ... AND ...
+	// Adds condition if rssQuery.Parametr != ""
+	addQueryPart(&models.DB, "access_time >= ?", rssQuery.AccessTimeFrom)
+	addQueryPart(&models.DB, "access_time <= ?", rssQuery.AccessTimeTo)
+	addQueryPart(&models.DB, "response_time >= ?", rssQuery.ResponseTimeFrom)
+	addQueryPart(&models.DB, "response_time <= ?", rssQuery.ResponseTimeTo)
+	addQueryPart(&models.DB, "user_agent = ?", rssQuery.UserAgent)
+	addQueryPart(&models.DB, "url = ?", rssQuery.URL)
+	addQueryPart(&models.DB, "content = ?", rssQuery.Content)
+	//Find
+	if err := models.DB.Find(&rsses).Error; err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"error": "Записи не существуют"})
+		return
+	}
+	context.JSON(http.StatusOK, gin.H{"rsses": rsses})
 
-	article := models.Article{Writer: input.Writer, Title: input.Title, Content: input.Content}
-	models.DB.Create(&article)
-
-	context.JSON(http.StatusOK, gin.H{"articles": article})
 }
 
-// PATCH /articles/:id
-// Изменения информации
-func UpdateArticle(context *gin.Context) {
+// UpdateRss ...
+// PATCH /rsses/:id
+func UpdateRss(context *gin.Context) {
 	// Проверяем имеется ли такая запись перед тем как её менять
-	var article models.Article
-	if err := models.DB.Where("id = ?", context.Param("id")).First(&article).Error; err != nil {
+	var rss models.Rss
+	if err := models.DB.Where("id = ?", context.Param("id")).First(&rss).Error; err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"error": "Запись не существует"})
 		return
 	}
 
-	var input UpdateArticleInput
+	var input RssUpdate
 	if err := context.ShouldBindJSON(&input); err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	models.DB.Model(&article).Update(input)
+	models.DB.Model(&rss).Update(input)
 
-	context.JSON(http.StatusOK, gin.H{"articles": article})
+	context.JSON(http.StatusOK, gin.H{"rsses": rss})
 }
 
-// DELETE /articles/:id
-// Удаление
-func DeleteArticle(context *gin.Context) {
+// DeleteRss ...
+// DELETE /rsses/:id
+func DeleteRss(context *gin.Context) {
 	// Проверяем имеется ли такая запись перед тем как её удалять
-	var article models.Article
-	if err := models.DB.Where("id = ?", context.Param("id")).First(&article).Error; err != nil {
+	var rss models.Rss
+	if err := models.DB.Where("id = ?", context.Param("id")).First(&rss).Error; err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"error": "Запись не существует"})
 		return
 	}
+	models.DB.Delete(&rss)
 
-	models.DB.Delete(&article)
+	context.JSON(http.StatusOK, gin.H{"rss": true})
+}
 
-	context.JSON(http.StatusOK, gin.H{"articles": true})
+// addQueryPart ...
+func addQueryPart(db **gorm.DB, queryPart string, data string) {
+	if data != "" {
+		fmt.Println(queryPart + " " + data)
+		*db = (*db).Where(queryPart, data)
+	}
 }

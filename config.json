@@ -1,11 +1,10 @@
 {
-    "dialect":"postgres",
-    "host":"localhost",
-    "port":"5432" ,
-    "user":"postgres",
-    "dbname":"demo" ,
-    "password":"q" ,
-    "sslmode":"disable",
-    
-    "http":":8083"
+    "DBDialect":"postgres",
+    "DBHost":"localhost",
+    "DBPort":"5432" ,
+    "DBUser":"yarssbot",
+    "DBName":"rsses" ,
+    "DBPassword":"KGyQzU1HD75ZCU" ,
+    "SSLMode":"disable",
+    "HTTP":":8080"
 }

@@ -10,7 +10,7 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "/home/v/workspace/go/src/rest_api_test/main.go",
+            "program": "/home/yarssbot/projects/projects/src/rss_rest/main.go",
             "env": {},
             "args": []
         }
